@@ -1,6 +1,6 @@
 -- ==========================================================
--- SCRIPT ÚNICO: PANEL TROLL ESTILO SCRIPT-HUB (PC/MÓVIL)
--- Ubicación: StarterPlayer -> StarterPlayerScripts -> LocalScript
+-- SCRIPT ÚNICO: ASTRA HUD - ESTILO CROSSSHOT / iDEPHUB
+-- Ubicación del archivo: GitHub (ASTRA HUD.lua)
 -- ==========================================================
 
 local Players = game:GetService("Players")
@@ -15,22 +15,23 @@ local Camera = workspace.CurrentCamera
 local aimbotActivo = false
 local hitboxesExpandidas = false
 local robuxFalsos = 0
+local unlocksActivo = false
 
 -- ----------------------------------------------------------
 -- 1. CREACIÓN DE INTERFAZ ESTILO ESCUADRA (DARK/GREEN)
 -- ----------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "iDepTrollHub"
+ScreenGui.Name = "iDepAstraHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
--- Botón Flotante para Minimizar (Estilo Esquina superior)
+-- Botón Flotante para Minimizar (Estilo Esquina)
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size = UDim2.new(0, 130, 0, 40)
 ToggleButton.Position = UDim2.new(0.02, 0, 0.05, 0)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 22)
 ToggleButton.Text = "Ocultar Panel"
-ToggleButton.TextColor3 = Color3.fromRGB(0, 255, 130) -- Verde neón estilo CrossShot
+ToggleButton.TextColor3 = Color3.fromRGB(0, 255, 130) -- Verde Neón CrossShot
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.TextSize = 13
 ToggleButton.Parent = ScreenGui
@@ -41,8 +42,8 @@ ToggleCorner.Parent = ToggleButton
 
 -- Contenedor Principal (Marco Oscuro con Bordes Suaves)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 340, 0, 460)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
+MainFrame.Size = UDim2.new(0, 340, 0, 480)
+MainFrame.Position = UDim2.new(0.5, -170, 0.5, -240)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
@@ -55,7 +56,7 @@ MainCorner.Parent = MainFrame
 local Header = Instance.new("TextLabel")
 Header.Size = UDim2.new(1, 0, 0, 45)
 Header.BackgroundTransparency = 1
-Header.Text = "CrossShot - [ TROLL PANEL ]"
+Header.Text = "CrossShot - [ ASTRA HUD ]"
 Header.TextColor3 = Color3.fromRGB(0, 255, 130)
 Header.Font = Enum.Font.GothamBlack
 Header.TextSize = 16
@@ -87,9 +88,7 @@ Layout.Padding = UDim.new(0, 8)
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Layout.Parent = ScrollFrame
 
--- ----------------------------------------------------------
--- CREADOR DINÁMICO DE BOTONES ACTIVABLES (TOGGLES)
--- ----------------------------------------------------------
+-- CREADOR DINÁMICO DE BOTONES SWITCH (TOGGLES)
 local function crearToggle(texto)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 300, 0, 45)
@@ -128,13 +127,7 @@ local function crearToggle(texto)
     return indicator
 end
 
--- Instanciar elementos del menú
-local ToggleAim = crearToggle("Asistencia de Apuntado")
-local ToggleHitbox = crearToggle("Expandir Hitboxes (Enemigos)")
-local ToggleHeadless = crearToggle("Modo Invisible (Headless)")
-local ToggleKorblox = crearToggle("Pierna Izquierda Invisible")
-
--- Botones de acción directa (Velocidad, Robux y Animaciones)
+-- Botones de acción directa
 local function crearBotonAccion(texto, color)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 300, 0, 45)
@@ -151,9 +144,13 @@ local function crearBotonAccion(texto, color)
     return btn
 end
 
-local BtnSpeed = crearBotonAccion("⚡ Aumentar Velocidad (+50)", Color3.fromRGB(35, 130, 255))
+-- Instanciar elementos solicitados en el menú
+local ToggleAim = crearToggle("Asistencia de Apuntado (Aimbot)")
+local ToggleHitbox = crearToggle("Expandir Hitboxes (Enemigos)")
+local ToggleUnlocks = crearToggle("Desbloquear Todo (Skins/Gamepasses)")
+
 local BtnAddRobux = crearBotonAccion("💰 Generar +500,000 Robux Falsos", Color3.fromRGB(0, 180, 100))
-local BtnAnim = crearBotonAccion("🎬 Ejecutar Animación Rara (Baile)", Color3.fromRGB(140, 80, 255))
+local BtnAnim = crearBotonAccion("🎬 Ejecutar Animación (Baile Troll)", Color3.fromRGB(140, 80, 255))
 
 -- ----------------------------------------------------------
 -- 2. SISTEMA DE OCULTAR / MOSTRAR CON ANIMACIÓN
@@ -167,11 +164,6 @@ ToggleButton.MouseButton1Click:Connect(function()
     ToggleButton.Text = menuAbierto and "Ocultar Panel" or "Mostrar Panel"
 end)
 
--- ----------------------------------------------------------
--- 3. FUNCIONALIDADES DEL PANEL TROLL
--- ----------------------------------------------------------
-
--- Función genérica para cambiar visualmente el estado de un botón switch
 local function actualizarVisualToggle(btn, estado)
     if estado then
         btn.Text = "ON"
@@ -184,7 +176,11 @@ local function actualizarVisualToggle(btn, estado)
     end
 end
 
--- Aimbot / Aim Assist (Sigue al rival más cercano de forma fluida)
+-- ----------------------------------------------------------
+-- 3. FUNCIONALIDADES DEL PANEL
+-- ----------------------------------------------------------
+
+-- Aimbot Fluyente (Busca el objetivo más cercano a la cámara)
 ToggleAim.MouseButton1Click:Connect(function()
     aimbotActivo = not aimbotActivo
     actualizarVisualToggle(ToggleAim, aimbotActivo)
@@ -193,7 +189,7 @@ end)
 local function buscarObjetivo()
     local distanciaLimite = 400
     local target = nil
-    for _, j en ipairs(Players:GetPlayers()) do
+    for _, j in ipairs(Players:GetPlayers()) do
         if j ~= LocalPlayer and j.Character and j.Character:FindFirstChild("HumanoidRootPart") then
             local miHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if miHrp then
@@ -217,12 +213,12 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Expansor de Hitbox (Local para simular el tiro fácil de tu shooter)
+-- Expansor de Hitbox (Agranda al enemigo localmente)
 ToggleHitbox.MouseButton1Click:Connect(function()
     hitboxesExpandidas = not hitboxesExpandidas
     actualizarVisualToggle(ToggleHitbox, hitboxesExpandidas)
     
-    for _, j en ipairs(Players:GetPlayers()) do
+    for _, j in ipairs(Players:GetPlayers()) do
         if j ~= LocalPlayer and j.Character then
             local hrp = j.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
@@ -239,32 +235,36 @@ ToggleHitbox.MouseButton1Click:Connect(function()
     end
 end)
 
--- Multiplicador de Velocidad WalkSpeed
-BtnSpeed.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        if hum.WalkSpeed <= 16 then
-            hum.WalkSpeed = 66
-            BtnSpeed.Text = "⚡ Velocidad: RÁPIDO (66)"
-            BtnSpeed.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-        else
-            hum.WalkSpeed = 16
-            BtnSpeed.Text = "⚡ Aumentar Velocidad (+50)"
-            BtnSpeed.BackgroundColor3 = Color3.fromRGB(35, 130, 255)
-        end
+-- Desbloquear Todo (Simulación de Gamepasses y Skins locales)
+ToggleUnlocks.MouseButton1Click:Connect(function()
+    unlocksActivo = not unlocksActivo
+    actualizarVisualToggle(ToggleUnlocks, unlocksActivo)
+    
+    -- Busca carpetas comunes del juego vinculadas al perfil local
+    local deSp = LocalPlayer:FindFirstChild("StarterGear") or LocalPlayer:FindFirstChild("Backpack")
+    if unlocksActivo and deSp then
+        print("[ASTRA HUD] Desbloqueando herramientas del servidor de forma local...")
+        -- Agrega aquí herramientas de prueba si el juego lo permite
     end
 end)
 
--- Robux Falsos para simular compras "Troll" en tu lobby
+-- Robux Falsos con Destello Visual
 BtnAddRobux.MouseButton1Click:Connect(function()
     robuxFalsos = robuxFalsos + 500000
     RobuxDisplay.Text = "💵 Robux: " .. string.format("%.0f", robuxFalsos)
-    
-    -- Pequeño efecto visual de destello en el contador
     RobuxDisplay.TextColor3 = Color3.fromRGB(255, 215, 0)
     task.wait(0.2)
     RobuxDisplay.TextColor3 = Color3.fromRGB(0, 200, 255)
 end)
 
--- Cosméticos Locales (Headless / Korblox)
+-- Animación Rara (Emote de Baile)
+BtnAnim.MouseButton1Click:Connect(function()
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://3333499508" -- ID universal de baile
+        local track = humanoid:LoadAnimation(anim)
+        track:Play()
+    end
+end)
